@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ön Muhasebe Paneli</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <h1>Ön Muhasebe Paneli</h1>
+    <nav>
+      <a href="{{ url_for('monthly_report') }}">Ay Sonu Raporu</a>
+      <a href="{{ url_for('export_csv', dataset='cariler') }}">Cari CSV</a>
+      <a href="{{ url_for('export_csv', dataset='faturalar') }}">Fatura CSV</a>
+      <a href="{{ url_for('export_csv', dataset='odemeler') }}">Ödeme CSV</a>
+      <a href="{{ url_for('export_csv', dataset='cek-senet') }}">Çek/Senet CSV</a>
+    </nav>
+  </header>
+
+  <section class="cards">
+    <article><h3>Cari Sayısı</h3><p>{{ totals.customers }}</p></article>
+    <article><h3>Fatura Adedi</h3><p>{{ totals.invoices }}</p></article>
+    <article><h3>Toplam Ödeme</h3><p>{{ '%.2f'|format(totals.payments) }} ₺</p></article>
+    <article><h3>Çek/Senet</h3><p>{{ totals.instruments }}</p></article>
+  </section>
+
+  <main>
+    <section>
+      <h2>Yeni Cari</h2>
+      <form method="post" action="/customers" class="grid-form">
+        <input name="name" placeholder="Cari adı" required>
+        <input name="tax_number" placeholder="Vergi no">
+        <input name="phone" placeholder="Telefon">
+        <input type="email" name="email" placeholder="E-posta">
+        <button type="submit">Kaydet</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>Fatura Girişi (Detaylı)</h2>
+      <form method="post" action="/invoices" class="grid-form">
+        <select name="customer_id" required>
+          <option value="">Cari seç</option>
+          {% for c in customers %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+        </select>
+        <select name="invoice_type">
+          {% for t in invoice_types %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+        </select>
+        <input type="date" name="invoice_date" required>
+        <input type="date" name="due_date">
+        <input name="description" placeholder="Kalem açıklaması" required>
+        <input type="number" step="0.01" min="0" name="quantity" placeholder="Miktar" required>
+        <input type="number" step="0.01" min="0" name="unit_price" placeholder="Birim Fiyat" required>
+        <input type="number" step="0.01" min="0" name="vat_rate" placeholder="KDV %" required>
+        <input name="notes" placeholder="Not">
+        <button type="submit">Fatura Kaydet</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>Ödeme / Tahsilat</h2>
+      <form method="post" action="/payments" class="grid-form">
+        <select name="customer_id" required>
+          <option value="">Cari seç</option>
+          {% for c in customers %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+        </select>
+        <select name="payment_type">{% for p in payment_types %}<option value="{{ p }}">{{ p }}</option>{% endfor %}</select>
+        <select name="direction">
+          <option value="Tahsilat">Tahsilat</option>
+          <option value="Ödeme">Ödeme</option>
+        </select>
+        <input type="date" name="payment_date" required>
+        <input type="number" min="0" step="0.01" name="amount" placeholder="Tutar" required>
+        <input name="description" placeholder="Açıklama">
+        <button type="submit">Ödeme Kaydet</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>Çek / Senet</h2>
+      <form method="post" action="/instruments" class="grid-form">
+        <select name="customer_id" required>
+          <option value="">Cari seç</option>
+          {% for c in customers %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+        </select>
+        <select name="document_type">{% for d in document_types %}<option value="{{ d }}">{{ d }}</option>{% endfor %}</select>
+        <input name="document_no" placeholder="Belge No" required>
+        <input type="date" name="issue_date" required>
+        <input type="date" name="due_date" required>
+        <input type="number" min="0" step="0.01" name="amount" placeholder="Tutar" required>
+        <select name="status">
+          <option value="Portföyde">Portföyde</option>
+          <option value="Tahsil/Ödendi">Tahsil/Ödendi</option>
+          <option value="İade">İade</option>
+        </select>
+        <input name="notes" placeholder="Not">
+        <button type="submit">Belge Kaydet</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>Cari Bakiyeler</h2>
+      <table>
+        <thead><tr><th>Cari</th><th>Vergi No</th><th>Telefon</th><th>Bakiye</th></tr></thead>
+        <tbody>
+          {% for c in customers %}
+          <tr>
+            <td>{{ c.name }}</td>
+            <td>{{ c.tax_number or '-' }}</td>
+            <td>{{ c.phone or '-' }}</td>
+            <td>{{ '%.2f'|format(c.balance) }} ₺</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4">Henüz kayıt yok.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Son Faturalar</h2>
+      <table>
+        <thead><tr><th>Tarih</th><th>Cari</th><th>Tip</th><th>Tutar</th></tr></thead>
+        <tbody>
+          {% for inv in recent_invoices %}
+          <tr>
+            <td>{{ inv.invoice_date }}</td>
+            <td>{{ inv.customer_name }}</td>
+            <td>{{ inv.invoice_type }}</td>
+            <td>{{ '%.2f'|format(inv.total_amount) }} ₺</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4">Henüz fatura yok.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

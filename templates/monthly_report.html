@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ay Sonu Raporu</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <h1>Ay Sonu Raporu</h1>
+    <nav><a href="{{ url_for('dashboard') }}">Panele Dön</a></nav>
+  </header>
+
+  <section>
+    <form method="get" action="{{ url_for('monthly_report') }}" class="grid-form">
+      <label>Ay Seç <input type="month" name="month" value="{{ month }}"></label>
+      <button type="submit">Raporla</button>
+    </form>
+  </section>
+
+  <section class="cards">
+    <article><h3>Satış Toplamı</h3><p>{{ '%.2f'|format(sales) }} ₺</p></article>
+    <article><h3>Alış Toplamı</h3><p>{{ '%.2f'|format(purchases) }} ₺</p></article>
+    <article><h3>Tahsilat</h3><p>{{ '%.2f'|format(collections) }} ₺</p></article>
+    <article><h3>Ödemeler</h3><p>{{ '%.2f'|format(outgoing) }} ₺</p></article>
+    <article><h3>Brüt Kâr</h3><p>{{ '%.2f'|format(gross_profit) }} ₺</p></article>
+    <article><h3>Net Nakit</h3><p>{{ '%.2f'|format(net_cash) }} ₺</p></article>
+  </section>
+
+  <section>
+    <h2>Açık Çek/Senetler</h2>
+    <table>
+      <thead><tr><th>Cari</th><th>Tip</th><th>No</th><th>Vade</th><th>Tutar</th><th>Durum</th></tr></thead>
+      <tbody>
+        {% for i in open_instruments %}
+          <tr>
+            <td>{{ i.customer_name }}</td>
+            <td>{{ i.document_type }}</td>
+            <td>{{ i.document_no }}</td>
+            <td>{{ i.due_date }}</td>
+            <td>{{ '%.2f'|format(i.amount) }} ₺</td>
+            <td>{{ i.status }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6">Açık belge yok.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</body>
+</html>
